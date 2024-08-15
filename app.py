@@ -10,4 +10,4 @@ def echo(text, request: gr.Request):
 
 
 interface = gr.Interface(echo, "textbox", "textbox")
-interface.launch(server_name="0.0.0.0", server_port=8080)
+interface.launch(server_name="0.0.0.0", server_port=8080, inbrowser=True)
