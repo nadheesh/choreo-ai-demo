@@ -1,0 +1,10 @@
+apiVersion: core.choreo.dev/v1beta1
+kind: ComponentConfig
+spec:
+  inbound:
+    - name: personal-assistant-service
+      port: 80  # Adjust the port number as needed
+      type: REST
+      networkVisibility: Public
+      context: /
+      schemaFilePath: openapi.yaml
