@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Conversation App</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            height: 100vh;
+        }
+        .sidebar {
+            width: 300px;
+            background-color: #f0f0f0;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+        .main {
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+        .chat-container {
+            flex-grow: 1;
+            overflow-y: auto;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            padding: 10px;
+            margin-bottom: 20px;
+        }
+        .message {
+            margin-bottom: 15px;
+            display: flex;
+            align-items: flex-start;
+        }
+        .avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            margin-right: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            color: white;
+        }
+        .user-avatar {
+            background-color: #3498db;
+        }
+        .ai-avatar {
+            background-color: #2ecc71;
+        }
+        .message-content {
+            background-color: #e6e6e6;
+            padding: 10px;
+            border-radius: 10px;
+            max-width: 70%;
+        }
+        .user-message .message-content {
+            background-color: #dcf8c6;
+        }
+        .input-container {
+            display: flex;
+        }
+        input[type="text"], input[type="url"] {
+            flex-grow: 1;
+            padding: 10px;
+            font-size: 16px;
+        }
+        button {
+            padding: 10px 20px;
+            font-size: 16px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        #serverUrl {
+            width: 100%;
+            margin-bottom: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="sidebar">
+        <h2>Configuration</h2>
+        <input type="url" id="serverUrl" placeholder="Enter server URL">
+        <h2>Add Content</h2>
+        <input type="url" id="urlInput" placeholder="Enter URL">
+        <button onclick="addContent()">Add Content</button>
+    </div>
+    <div class="main">
+        <div class="chat-container" id="chatContainer"></div>
+        <div class="input-container">
+            <input type="text" id="messageInput" placeholder="Type your message...">
+            <button id="sendButton">Send</button>
+        </div>
+    </div>
+
+    <script>
+        const userId = 'user123'; // Replace with actual user ID management
+        let chatHistory = [];
+        let lastUserMessage = null;
+
+        function getServerUrl() {
+            return document.getElementById('serverUrl').value.trim() || 'http://localhost:8000';
+        }
+
+        async function addContent() {
+            const url = document.getElementById('urlInput').value;
+            if (!url) return;
+
+            try {
+                const response = await fetch(`${getServerUrl()}/add_data`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ url, user_id: userId }),
+                });
+                const result = await response.json();
+                alert(result.message);
+                document.getElementById('urlInput').value = '';
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Failed to add content');
+            }
+        }
+
+        async function sendMessage() {
+            const messageInput = document.getElementById('messageInput');
+            const message = messageInput.value.trim();
+            if (!message) return;
+
+            // Display user message in chat
+            addMessageToChat('user', message);
+            messageInput.value = '';
+
+            // Store the user message
+            lastUserMessage = message;
+
+            try {
+                const response = await fetch(`${getServerUrl()}/converse`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        user_id: userId,
+                        message: message,
+                        chat_history: chatHistory
+                    }),
+                });
+                const result = await response.json();
+
+                // Display AI response in chat
+                addMessageToChat('ai', result.response);
+
+                // Add the user-AI message pair to chat history
+                if (lastUserMessage) {
+                    chatHistory.push(
+                        { role: 'user', content: lastUserMessage },
+                        { role: 'ai', content: result.response }
+                    );
+                    lastUserMessage = null;
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                addMessageToChat('ai', 'Sorry, I encountered an error.');
+            }
+        }
+
+        function addMessageToChat(role, content) {
+            const chatContainer = document.getElementById('chatContainer');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${role}-message`;
+
+            const avatar = document.createElement('div');
+            avatar.className = `avatar ${role}-avatar`;
+            avatar.textContent = role === 'user' ? 'U' : 'AI';
+
+            const messageContent = document.createElement('div');
+            messageContent.className = 'message-content';
+            messageContent.textContent = content;
+
+            messageDiv.appendChild(avatar);
+            messageDiv.appendChild(messageContent);
+            chatContainer.appendChild(messageDiv);
+
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+        }
+
+        // Initialize with a default server URL and set up event listeners
+        document.addEventListener('DOMContentLoaded', () => {
+            document.getElementById('serverUrl').value = 'http://localhost:8000';
+
+            const messageInput = document.getElementById('messageInput');
+            const sendButton = document.getElementById('sendButton');
+
+            // Send message when Send button is clicked
+            sendButton.addEventListener('click', sendMessage);
+
+            // Send message when Enter key is pressed in the input field
+            messageInput.addEventListener('keypress', function(event) {
+                if (event.key === 'Enter') {
+                    event.preventDefault(); // Prevent default form submission
+                    sendMessage();
+                }
+            });
+        });
+    </script>
+</body>
+</html>
