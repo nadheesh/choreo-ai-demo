@@ -1,0 +1,117 @@
+openapi: 3.0.0
+info:
+  title: Conversational AI with Document Retrieval
+  description: A service for adding data and conducting conversations using AI and document retrieval.
+  version: 1.0.0
+
+servers:
+  - url: http://localhost:8000
+
+paths:
+  /add_data:
+    post:
+      summary: Add data from a web page to the vector store
+      operationId: addData
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AddDataRequest'
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Data added successfully
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /converse:
+    post:
+      summary: Process a conversation request and generate a response
+      operationId: converse
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ConversationRequest'
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  response:
+                    type: string
+                    example: This is an AI-generated response.
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+components:
+  schemas:
+    AddDataRequest:
+      type: object
+      required:
+        - url
+        - user_id
+      properties:
+        url:
+          type: string
+          example: https://example.com/page
+        user_id:
+          type: string
+          example: user123
+
+    Message:
+      type: object
+      required:
+        - role
+      properties:
+        role:
+          type: string
+          example: user
+        content:
+          type: string
+          example: Hello, how are you?
+
+    ConversationRequest:
+      type: object
+      required:
+        - user_id
+        - message
+        - chat_history
+      properties:
+        user_id:
+          type: string
+          example: user123
+        message:
+          type: string
+          example: What's the weather like today?
+        chat_history:
+          type: array
+          items:
+            $ref: '#/components/schemas/Message'
+
+    ErrorResponse:
+      type: object
+      properties:
+        detail:
+          type: string
+          example: An error occurred while processing the request
