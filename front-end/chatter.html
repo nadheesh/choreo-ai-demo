@@ -11,12 +11,15 @@
             padding: 0;
             display: flex;
             height: 100vh;
+            overflow: hidden;
         }
         .sidebar {
-            width: 300px;
+            width: 350px;
             background-color: #f0f0f0;
             padding: 20px;
             box-sizing: border-box;
+            overflow-y: auto;
+            flex-shrink: 0;
         }
         .main {
             flex-grow: 1;
@@ -24,6 +27,7 @@
             flex-direction: column;
             padding: 20px;
             box-sizing: border-box;
+            max-width: calc(100% - 350px);
         }
         .chat-container {
             flex-grow: 1;
@@ -48,6 +52,7 @@
             justify-content: center;
             font-weight: bold;
             color: white;
+            flex-shrink: 0;
         }
         .user-avatar {
             background-color: #3498db;
@@ -59,18 +64,22 @@
             background-color: #e6e6e6;
             padding: 10px;
             border-radius: 10px;
-            max-width: 70%;
+            max-width: calc(100% - 60px);
+            word-wrap: break-word;
         }
         .user-message .message-content {
             background-color: #dcf8c6;
         }
         .input-container {
             display: flex;
+            padding-top: 10px;
         }
-        input[type="text"], input[type="url"] {
-            flex-grow: 1;
+        input[type="text"], input[type="url"], input[type="password"] {
+            width: 100%;
             padding: 10px;
             font-size: 16px;
+            margin-bottom: 10px;
+            box-sizing: border-box;
         }
         button {
             padding: 10px 20px;
@@ -83,36 +92,125 @@
         button:hover {
             background-color: #45a049;
         }
-        #serverUrl {
-            width: 100%;
+        .config-section {
+            margin-bottom: 20px;
+        }
+        .oauth-fields {
+            display: none;
+        }
+        .oauth-fields.visible {
+            display: block;
+        }
+        .checkbox-container {
+            display: flex;
+            align-items: center;
             margin-bottom: 10px;
         }
-
+        .checkbox-container input[type="checkbox"] {
+            margin-right: 5px;
+        }
+        .loading-dots {
+            display: inline-block;
+            width: 50px;
+            text-align: left;
+        }
+        @keyframes blink {
+            0% { opacity: .2; }
+            20% { opacity: 1; }
+            100% { opacity: .2; }
+        }
+        .loading-dots span {
+            animation-name: blink;
+            animation-duration: 1.4s;
+            animation-iteration-count: infinite;
+            animation-fill-mode: both;
+        }
+        .loading-dots span:nth-child(2) {
+            animation-delay: .2s;
+        }
+        .loading-dots span:nth-child(3) {
+            animation-delay: .4s;
+        }
     </style>
 </head>
 <body>
-<div class="sidebar">
-    <h2>Configuration</h2>
-    <input type="url" id="serverUrl" placeholder="Enter server URL">
-    <h2>Add Content</h2>
-    <input type="url" id="urlInput" placeholder="Enter URL">
-    <button onclick="addContent()">Add Content</button>
-</div>
-<div class="main">
-    <div class="chat-container" id="chatContainer"></div>
-    <div class="input-container">
-        <input type="text" id="messageInput" placeholder="Type your message...">
-        <button id="sendButton">Send</button>
+    <div class="sidebar">
+        <div class="config-section">
+            <h2>Configuration</h2>
+            <input type="url" id="serverUrl" placeholder="Enter server URL">
+            <div class="checkbox-container">
+                <input type="checkbox" id="useOAuth" onchange="toggleOAuthFields()">
+                <label for="useOAuth">Use OAuth2</label>
+            </div>
+            <div class="oauth-fields" id="oauthFields">
+                <input type="text" id="clientId" placeholder="Client ID">
+                <input type="password" id="clientSecret" placeholder="Client Secret">
+                <input type="url" id="tokenUrl" placeholder="Token URL">
+            </div>
+        </div>
+        <div class="config-section">
+            <h2>Add Content</h2>
+            <input type="url" id="urlInput" placeholder="Enter URL">
+            <button onclick="addContent()">Add Content</button>
+        </div>
     </div>
-</div>
+    <div class="main">
+        <div class="chat-container" id="chatContainer"></div>
+        <div class="input-container">
+            <input type="text" id="messageInput" placeholder="Type your message...">
+            <button onclick="sendMessage()">Send</button>
+        </div>
+    </div>
 
-<script>
+    <script>
         const userId = 'user123'; // Replace with actual user ID management
         let chatHistory = [];
         let lastUserMessage = null;
+        let accessToken = null;
 
         function getServerUrl() {
             return document.getElementById('serverUrl').value.trim() || 'http://localhost:8000';
+        }
+
+        function toggleOAuthFields() {
+            const oauthFields = document.getElementById('oauthFields');
+            oauthFields.classList.toggle('visible', document.getElementById('useOAuth').checked);
+        }
+
+        async function getAccessToken() {
+            if (!document.getElementById('useOAuth').checked) return null;
+
+            const clientId = document.getElementById('clientId').value;
+            const clientSecret = document.getElementById('clientSecret').value;
+            const tokenUrl = document.getElementById('tokenUrl').value;
+
+            const response = await fetch(tokenUrl, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: `grant_type=client_credentials&client_id=${clientId}&client_secret=${clientSecret}`,
+            });
+
+            if (!response.ok) {
+                throw new Error('Failed to obtain access token');
+            }
+
+            const data = await response.json();
+            return data.access_token;
+        }
+
+        async function makeAuthenticatedRequest(url, options = {}) {
+            if (document.getElementById('useOAuth').checked) {
+                if (!accessToken) {
+                    accessToken = await getAccessToken();
+                }
+                options.headers = {
+                    ...options.headers,
+                    'Authorization': `Bearer ${accessToken}`,
+                };
+            }
+            return fetch(url, options);
         }
 
         async function addContent() {
@@ -120,7 +218,7 @@
             if (!url) return;
 
             try {
-                const response = await fetch(`${getServerUrl()}/add_data`, {
+                const response = await makeAuthenticatedRequest(`${getServerUrl()}/add_data`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -138,18 +236,18 @@
 
         async function sendMessage() {
             const messageInput = document.getElementById('messageInput');
-            const message = messageInput.value.trim();
+            const message = messageInput.value;
             if (!message) return;
 
-            // Display user message in chat
             addMessageToChat('user', message);
             messageInput.value = '';
-
-            // Store the user message
             lastUserMessage = message;
 
+            // Add loading indicator
+            const loadingMessage = addMessageToChat('ai', '<div class="loading-dots"><span>.</span><span>.</span><span>.</span></div>');
+
             try {
-                const response = await fetch(`${getServerUrl()}/converse`, {
+                const response = await makeAuthenticatedRequest(`${getServerUrl()}/converse`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -162,10 +260,10 @@
                 });
                 const result = await response.json();
 
-                // Display AI response in chat
+                // Remove loading indicator and add actual response
+                loadingMessage.remove();
                 addMessageToChat('ai', result.response);
 
-                // Add the user-AI message pair to chat history
                 if (lastUserMessage) {
                     chatHistory.push(
                         { role: 'user', content: lastUserMessage },
@@ -175,6 +273,8 @@
                 }
             } catch (error) {
                 console.error('Error:', error);
+                // Remove loading indicator and add error message
+                loadingMessage.remove();
                 addMessageToChat('ai', 'Sorry, I encountered an error.');
             }
         }
@@ -190,34 +290,26 @@
 
             const messageContent = document.createElement('div');
             messageContent.className = 'message-content';
-            messageContent.textContent = content;
+            messageContent.innerHTML = content;
 
             messageDiv.appendChild(avatar);
             messageDiv.appendChild(messageContent);
             chatContainer.appendChild(messageDiv);
 
             chatContainer.scrollTop = chatContainer.scrollHeight;
+
+            return messageDiv; // Return the message div for potential removal (loading indicator)
         }
 
-        // Initialize with a default server URL and set up event listeners
         document.addEventListener('DOMContentLoaded', () => {
             document.getElementById('serverUrl').value = 'http://localhost:8000';
 
-            const messageInput = document.getElementById('messageInput');
-            const sendButton = document.getElementById('sendButton');
-
-            // Send message when Send button is clicked
-            sendButton.addEventListener('click', sendMessage);
-
-            // Send message when Enter key is pressed in the input field
-            messageInput.addEventListener('keypress', function(event) {
-                if (event.key === 'Enter') {
-                    event.preventDefault(); // Prevent default form submission
+            document.getElementById('messageInput').addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
                     sendMessage();
                 }
             });
         });
-
-</script>
+    </script>
 </body>
 </html>
