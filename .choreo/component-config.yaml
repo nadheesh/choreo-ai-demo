@@ -3,7 +3,7 @@ kind: ComponentConfig
 spec:
   inbound:
     - name: personal-assistant-service
-      port: 80  # Adjust the port number as needed
+      port: 5000
       type: REST
       networkVisibility: Public
       context: /
