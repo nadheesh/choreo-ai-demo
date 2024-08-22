@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AI Conversation App</title>
+    <script src="config.js"></script>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -14,7 +15,7 @@
             overflow: hidden;
         }
         .sidebar {
-            width: 350px;
+            width: 300px;
             background-color: #f0f0f0;
             padding: 20px;
             box-sizing: border-box;
@@ -27,7 +28,7 @@
             flex-direction: column;
             padding: 20px;
             box-sizing: border-box;
-            max-width: calc(100% - 350px);
+            max-width: calc(100% - 300px);
         }
         .chat-container {
             flex-grow: 1;
@@ -74,7 +75,7 @@
             display: flex;
             padding-top: 10px;
         }
-        input[type="text"], input[type="url"], input[type="password"] {
+        input[type="text"], input[type="url"] {
             width: 100%;
             padding: 10px;
             font-size: 16px;
@@ -94,20 +95,6 @@
         }
         .config-section {
             margin-bottom: 20px;
-        }
-        .oauth-fields {
-            display: none;
-        }
-        .oauth-fields.visible {
-            display: block;
-        }
-        .checkbox-container {
-            display: flex;
-            align-items: center;
-            margin-bottom: 10px;
-        }
-        .checkbox-container input[type="checkbox"] {
-            margin-right: 5px;
         }
         .loading-dots {
             display: inline-block;
@@ -136,17 +123,8 @@
 <body>
     <div class="sidebar">
         <div class="config-section">
-            <h2>Configuration</h2>
-            <input type="url" id="serverUrl" placeholder="Enter server URL">
-            <div class="checkbox-container">
-                <input type="checkbox" id="useOAuth" onchange="toggleOAuthFields()">
-                <label for="useOAuth">Use OAuth2</label>
-            </div>
-            <div class="oauth-fields" id="oauthFields">
-                <input type="text" id="clientId" placeholder="Client ID">
-                <input type="password" id="clientSecret" placeholder="Client Secret">
-                <input type="url" id="tokenUrl" placeholder="Token URL">
-            </div>
+            <h2>User Configuration</h2>
+            <input type="text" id="userId" placeholder="Enter User ID">
         </div>
         <div class="config-section">
             <h2>Add Content</h2>
@@ -163,26 +141,14 @@
     </div>
 
     <script>
-        const userId = 'user123'; // Replace with actual user ID management
         let chatHistory = [];
         let lastUserMessage = null;
         let accessToken = null;
 
-        function getServerUrl() {
-            return document.getElementById('serverUrl').value.trim() || 'http://localhost:8000';
-        }
-
-        function toggleOAuthFields() {
-            const oauthFields = document.getElementById('oauthFields');
-            oauthFields.classList.toggle('visible', document.getElementById('useOAuth').checked);
-        }
-
         async function getAccessToken() {
-            if (!document.getElementById('useOAuth').checked) return null;
+            if (!window.configs.useOAuth) return null;
 
-            const clientId = document.getElementById('clientId').value;
-            const clientSecret = document.getElementById('clientSecret').value;
-            const tokenUrl = document.getElementById('tokenUrl').value;
+            const { clientId, clientSecret, tokenUrl } = window.configs.oauth;
 
             const response = await fetch(tokenUrl, {
                 method: 'POST',
@@ -201,7 +167,7 @@
         }
 
         async function makeAuthenticatedRequest(url, options = {}) {
-            if (document.getElementById('useOAuth').checked) {
+            if (window.configs.useOAuth) {
                 if (!accessToken) {
                     accessToken = await getAccessToken();
                 }
@@ -215,10 +181,14 @@
 
         async function addContent() {
             const url = document.getElementById('urlInput').value;
-            if (!url) return;
+            const userId = document.getElementById('userId').value;
+            if (!url || !userId) {
+                alert('Please enter both URL and User ID');
+                return;
+            }
 
             try {
-                const response = await makeAuthenticatedRequest(`${getServerUrl()}/add_data`, {
+                const response = await makeAuthenticatedRequest(`${window.configs.serviceUrl}/add_data`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -236,18 +206,21 @@
 
         async function sendMessage() {
             const messageInput = document.getElementById('messageInput');
+            const userId = document.getElementById('userId').value;
             const message = messageInput.value;
-            if (!message) return;
+            if (!message || !userId) {
+                alert('Please enter both message and User ID');
+                return;
+            }
 
             addMessageToChat('user', message);
             messageInput.value = '';
             lastUserMessage = message;
 
-            // Add loading indicator
             const loadingMessage = addMessageToChat('ai', '<div class="loading-dots"><span>.</span><span>.</span><span>.</span></div>');
 
             try {
-                const response = await makeAuthenticatedRequest(`${getServerUrl()}/converse`, {
+                const response = await makeAuthenticatedRequest(`${window.configs.serviceUrl}/converse`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -260,7 +233,6 @@
                 });
                 const result = await response.json();
 
-                // Remove loading indicator and add actual response
                 loadingMessage.remove();
                 addMessageToChat('ai', result.response);
 
@@ -273,7 +245,6 @@
                 }
             } catch (error) {
                 console.error('Error:', error);
-                // Remove loading indicator and add error message
                 loadingMessage.remove();
                 addMessageToChat('ai', 'Sorry, I encountered an error.');
             }
@@ -298,12 +269,10 @@
 
             chatContainer.scrollTop = chatContainer.scrollHeight;
 
-            return messageDiv; // Return the message div for potential removal (loading indicator)
+            return messageDiv;
         }
 
         document.addEventListener('DOMContentLoaded', () => {
-            document.getElementById('serverUrl').value = 'http://localhost:8000';
-
             document.getElementById('messageInput').addEventListener('keypress', function(e) {
                 if (e.key === 'Enter') {
                     sendMessage();
