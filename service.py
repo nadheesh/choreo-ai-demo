@@ -23,12 +23,12 @@ from fastapi import FastAPI, HTTPException
 from langchain.chains import create_history_aware_retriever
 from langchain.chains import create_retrieval_chain
 from langchain.chains.combine_documents import create_stuff_documents_chain
-from langchain.text_splitter import TokenTextSplitter
 from langchain_community.document_loaders import WebBaseLoader
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 from langchain_openai import ChatOpenAI
 from langchain_openai.embeddings import OpenAIEmbeddings
 from langchain_pinecone import PineconeVectorStore
+from langchain_text_splitters import RecursiveCharacterTextSplitter, Language
 from pydantic import BaseModel
 from starlette.middleware.cors import CORSMiddleware
 
@@ -93,16 +93,18 @@ async def add_data(request: AddDataRequest):
         loader = WebBaseLoader(request.url)
         docs = loader.load()  # avoid async loading due to nested async loop issue
 
-        text_splitter = TokenTextSplitter(
-            encoding_name="cl100k_base",
+        text_splitter = RecursiveCharacterTextSplitter.from_language(
+            language=Language.HTML,
             chunk_size=200,
             chunk_overlap=50
         )
+
         chunks = text_splitter.split_documents(docs)
 
         for chunk in chunks:
             chunk.metadata["user_id"] = request.user_id
 
+        # need to improve not to add duplicates
         await vector_store.aadd_documents(chunks)
 
         return {"message": "Data added successfully"}
