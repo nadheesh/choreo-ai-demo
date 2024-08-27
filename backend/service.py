@@ -94,9 +94,7 @@ async def add_data(request: AddDataRequest):
         docs = loader.load()  # avoid async loading due to nested async loop issue
 
         text_splitter = RecursiveCharacterTextSplitter.from_language(
-            language=Language.HTML,
-            chunk_size=200,
-            chunk_overlap=50
+            language=Language.HTML
         )
 
         chunks = text_splitter.split_documents(docs)
@@ -106,7 +104,6 @@ async def add_data(request: AddDataRequest):
 
         # need to improve not to add duplicates
         await vector_store.aadd_documents(chunks)
-
         return {"message": "Data added successfully"}
     except Exception as e:
         logger.error(f"Error adding data: {str(e)}", exc_info=True)
