@@ -1,7 +1,3 @@
-Here's the updated `README.md` with a section about setting environment variables:
-
----
-
 # Chat Agent with PDF Knowledge Base
 
 This repository contains the code for a chat agent capable of answering questions by referring to PDF documents uploaded by users. The agent is designed to continuously learn from the provided documents, offering a personalized experience tailored to each user. Users can upload PDFs to teach the agent, and then ask questions based on the content of those documents.
