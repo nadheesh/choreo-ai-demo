@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Chat Interface</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/uuid/8.3.2/uuid.min.js"></script>
+    <script src="public/config.js"></script>
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            font-family: Arial, sans-serif;
+            height: 100%;
+        }
+        .container {
+            display: flex;
+            height: 100%;
+        }
+        .left-panel {
+            width: 300px;
+            padding: 20px;
+            background-color: #f0f0f0;
+            border-right: 1px solid #ccc;
+        }
+        .chat-area {
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            padding: 20px;
+        }
+        .chat-messages {
+            flex-grow: 1;
+            overflow-y: auto;
+            margin-bottom: 20px;
+        }
+        .message {
+            margin-bottom: 15px;
+            display: flex;
+            align-items: flex-start;
+        }
+        .avatar {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            background-color: #007bff;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 10px;
+            font-weight: bold;
+        }
+        .user .avatar {
+            background-color: #28a745;
+        }
+        .message-content {
+            background-color: #f1f0f0;
+            padding: 10px;
+            border-radius: 10px;
+            max-width: 70%;
+        }
+        .user .message-content {
+            background-color: #007bff;
+            color: white;
+        }
+        .input-area {
+            display: flex;
+        }
+        #chat-input {
+            flex-grow: 1;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+        #send-button {
+            padding: 10px 20px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            margin-left: 10px;
+            cursor: pointer;
+        }
+        #send-button:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+        }
+        .loader {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #3498db;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            animation: spin 1s linear infinite;
+            display: none;
+            margin-left: 10px;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .typing-indicator {
+            display: none;
+            margin-bottom: 15px;
+        }
+        .typing-indicator span {
+            height: 10px;
+            width: 10px;
+            float: left;
+            margin: 0 1px;
+            background-color: #9E9EA1;
+            display: block;
+            border-radius: 50%;
+            opacity: 0.4;
+        }
+        .typing-indicator span:nth-of-type(1) {
+            animation: 1s blink infinite 0.3333s;
+        }
+        .typing-indicator span:nth-of-type(2) {
+            animation: 1s blink infinite 0.6666s;
+        }
+        .typing-indicator span:nth-of-type(3) {
+            animation: 1s blink infinite 0.9999s;
+        }
+        @keyframes blink {
+            50% { opacity: 1; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="left-panel">
+            <h2>Upload PDF</h2>
+            <input type="file" id="pdf-upload" accept=".pdf">
+            <button id="upload-button">Upload</button>
+            <div class="loader" id="upload-loader"></div>
+            <p id="upload-status"></p>
+        </div>
+        <div class="chat-area">
+            <div class="chat-messages" id="chat-messages"></div>
+            <div class="typing-indicator">
+                <span></span>
+                <span></span>
+                <span></span>
+            </div>
+            <div class="input-area">
+                <input type="text" id="chat-input" placeholder="Type your message...">
+                <button id="send-button">Send</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const chatMessages = document.getElementById('chat-messages');
+        const chatInput = document.getElementById('chat-input');
+        const sendButton = document.getElementById('send-button');
+        const pdfUpload = document.getElementById('pdf-upload');
+        const uploadButton = document.getElementById('upload-button');
+        const uploadLoader = document.getElementById('upload-loader');
+        const uploadStatus = document.getElementById('upload-status');
+        const typingIndicator = document.querySelector('.typing-indicator');
+
+        let accessToken = null;
+        let chatHistory = [];
+        const userId = uuid.v4();
+
+        async function getAccessToken() {
+            const response = await fetch(window.configs.tokenUrl, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded'
+                },
+                body: `grant_type=client_credentials&client_id=${window.configs.clientId}&client_secret=${window.configs.clientSecret}`
+            });
+            const data = await response.json();
+            accessToken = data.access_token;
+        }
+
+        async function sendMessage() {
+            const message = chatInput.value.trim();
+            if (message) {
+                addMessageToChat('user', message);
+                chatInput.value = '';
+                disableInput(true);
+                showTypingIndicator(true);
+
+                try {
+                    const response = await fetch(`${window.configs.serviceUrl}/ask_question`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${accessToken}`
+                        },
+                        body: JSON.stringify({
+                            user_id: userId,
+                            message: message,
+                            chat_history: chatHistory
+                        })
+                    });
+                    const data = await response.json();
+                    addMessageToChat('ai', data.response);
+                    chatHistory.push({ role: 'human', content: message });
+                    chatHistory.push({ role: 'ai', content: data.response });
+                } catch (error) {
+                    console.error('Error:', error);
+                    addMessageToChat('ai', 'Sorry, there was an error processing your request.');
+                } finally {
+                    disableInput(false);
+                    showTypingIndicator(false);
+                }
+            }
+        }
+
+        function addMessageToChat(role, content) {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${role}`;
+
+            const avatar = document.createElement('div');
+            avatar.className = 'avatar';
+            avatar.textContent = role === 'user' ? 'U' : 'AI';
+
+            const messageContent = document.createElement('div');
+            messageContent.className = 'message-content';
+            messageContent.textContent = content;
+
+            messageDiv.appendChild(avatar);
+            messageDiv.appendChild(messageContent);
+            chatMessages.appendChild(messageDiv);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        function disableInput(disabled) {
+            chatInput.disabled = disabled;
+            sendButton.disabled = disabled;
+        }
+
+        function showTypingIndicator(show) {
+            typingIndicator.style.display = show ? 'block' : 'none';
+        }
+
+        async function uploadPDF() {
+            const file = pdfUpload.files[0];
+            if (file) {
+                uploadLoader.style.display = 'inline-block';
+                uploadStatus.textContent = 'Uploading...';
+                disableInput(true);
+
+                const formData = new FormData();
+                formData.append('file', file);
+                formData.append('user_id', userId);
+
+                try {
+                    const response = await fetch(`${window.configs.serviceUrl}/add_data`, {
+                        method: 'POST',
+                        headers: {
+                            'Authorization': `Bearer ${accessToken}`
+                        },
+                        body: formData
+                    });
+                    const data = await response.json();
+                    uploadStatus.textContent = 'Upload successful!';
+                } catch (error) {
+                    console.error('Error:', error);
+                    uploadStatus.textContent = 'Upload failed. Please try again.';
+                } finally {
+                    uploadLoader.style.display = 'none';
+                    disableInput(false);
+                }
+            }
+        }
+
+        sendButton.addEventListener('click', sendMessage);
+        chatInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') sendMessage();
+        });
+        uploadButton.addEventListener('click', uploadPDF);
+
+        // Initialize
+        getAccessToken();
+    </script>
+</body>
+</html>
