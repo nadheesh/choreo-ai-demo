@@ -1,26 +1,37 @@
 openapi: 3.0.0
 info:
-  title: Conversational AI with Document Retrieval
-  description: A service for adding data and conducting conversations using AI and document retrieval.
+  title: Chat Agent API
+  description: This API allows users to upload PDFs to build a knowledge base and ask questions based on the uploaded documents.
   version: 1.0.0
-
-servers:
-  - url: http://localhost:8000
-
+  contact:
+    name: Nadheesh Jihan
+    email: nadheesh@wso2.com
+  license:
+    name: Apache 2.0
+    url: http://www.apache.org/licenses/LICENSE-2.0.html
 paths:
   /add_data:
     post:
-      summary: Add data from a web page to the vector store
+      summary: Upload a PDF and add its data to the vector store
+      description: Adds data from a PDF file to the vector store, associating the data with a specific user.
       operationId: addData
       requestBody:
         required: true
         content:
-          application/json:
+          multipart/form-data:
             schema:
-              $ref: '#/components/schemas/AddDataRequest'
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+                  description: The PDF file to upload.
+                user_id:
+                  type: string
+                  description: The user ID associated with the upload.
       responses:
         '200':
-          description: Successful operation
+          description: PDF data added successfully
           content:
             application/json:
               schema:
@@ -28,18 +39,22 @@ paths:
                 properties:
                   message:
                     type: string
-                    example: Data added successfully
+                    example: PDF data added successfully
         '500':
-          description: Internal server error
+          description: Internal Server Error
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
-
-  /converse:
+                type: object
+                properties:
+                  detail:
+                    type: string
+                    example: An error occurred while processing the request
+  /ask_question:
     post:
-      summary: Process a conversation request and generate a response
-      operationId: converse
+      summary: Ask a question based on uploaded PDFs
+      description: Processes a conversation request and generates a response based on the user's question and uploaded PDF data.
+      operationId: askQuestion
       requestBody:
         required: true
         content:
@@ -48,7 +63,7 @@ paths:
               $ref: '#/components/schemas/ConversationRequest'
       responses:
         '200':
-          description: Successful operation
+          description: AI-generated response
           content:
             application/json:
               schema:
@@ -56,62 +71,46 @@ paths:
                 properties:
                   response:
                     type: string
-                    example: This is an AI-generated response.
+                    example: The AI-generated response
         '500':
-          description: Internal server error
+          description: Internal Server Error
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
-
+                type: object
+                properties:
+                  detail:
+                    type: string
+                    example: An error occurred while processing the request
 components:
   schemas:
-    AddDataRequest:
-      type: object
-      required:
-        - url
-        - user_id
-      properties:
-        url:
-          type: string
-          example: https://example.com/page
-        user_id:
-          type: string
-          example: user123
-
     Message:
       type: object
-      required:
-        - role
       properties:
         role:
           type: string
-          example: user
+          description: The role of the message sender (e.g., user or system).
         content:
           type: string
-          example: Hello, how are you?
-
+          description: The content of the message.
+          nullable: true
+      required:
+        - role
     ConversationRequest:
       type: object
-      required:
-        - user_id
-        - message
-        - chat_history
       properties:
         user_id:
           type: string
-          example: user123
+          description: The ID of the user asking the question.
         message:
           type: string
-          example: What's the weather like today?
+          description: The user's question.
         chat_history:
           type: array
           items:
             $ref: '#/components/schemas/Message'
-
-    ErrorResponse:
-      type: object
-      properties:
-        detail:
-          type: string
-          example: An error occurred while processing the request
+          description: The history of the conversation.
+      required:
+        - user_id
+        - message
+        - chat_history
