@@ -1,4 +1,4 @@
-Create a single HTML file for an HTTP Chat UI that interfaces with the provided FastAPI backend.
+Create a Chat UI using HTML, CSS and JS that interfaces with the provided FastAPI backend.
 
 <Service Code or OpenAPI Specification>
 
