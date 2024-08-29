@@ -1,0 +1,27 @@
+Create a single HTML file for an HTTP Chat UI that interfaces with the provided FastAPI backend.
+
+<Service Code or OpenAPI Specification>
+
+Ensure the following as well.
+
+Layout and Effects:
+   - Implement a fixed left panel for PDF uploads with sufficient space.
+   - Create a main chat area on the right side.
+   - Include AI and User Avatars using CSS, displaying "U" for User and "AI" for AI.
+   - Use a three-dot animation to indicate waiting for server responses when rendering AI responses.
+   - Ensure the left panel does not resize when chat long responses are received.
+
+Functionality:
+   - Read configurations (serviceUrl, clientId, clientSecret, tokenUrl) from a global variable `window.configs` stored in `public/config.js`.
+   - Implement OAuth2 protocol to access the service using the provided configurations.
+   - Generate a UUID automatically for each chat session and store it in the browser session. Use this as the UserId.
+   - Store and use previous conversations as chat_history when asking new questions.
+   - Submit chat messages when the Enter key is pressed or when the send button is clicked.
+   - Implement PDF upload functionality.
+   - Add a loader near the upload field to show that uploading is in progress.
+   - Indicate the upload status (success/failure) in the UI after completion.
+
+User Interface Restrictions:
+   - Disable the ability to add text to the chat textbox or press send when:
+     a. Uploading PDFs
+     b. Waiting for chat responses
