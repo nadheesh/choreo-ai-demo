@@ -102,7 +102,7 @@ Use the following retrieved context to answer the question. \
 Only refer to the provided context when forming your answer. \
 If there isn't enough information to answer the question, \
 simply state that you don't have sufficient information. \
-Provide concise answers, structured neatly using Markdown.
+Provide concise answers, structured neatly using simple Markdown.
 {context}"""
 
 
