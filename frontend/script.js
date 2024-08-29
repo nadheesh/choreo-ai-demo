@@ -46,7 +46,7 @@ async function sendMessage() {
                 })
             });
             const data = await response.json();
-            addMessageToChat('ai', data.response);
+            addMessageToChat('ai', data.response, true);
             updateChatHistory('human', message);
             updateChatHistory('ai', data.response);
         } catch (error) {
@@ -59,7 +59,7 @@ async function sendMessage() {
     }
 }
 
-function addMessageToChat(role, content) {
+function addMessageToChat(role, content, isMarkdown = false) {
     const messageDiv = document.createElement('div');
     messageDiv.className = `message ${role}`;
 
@@ -69,7 +69,12 @@ function addMessageToChat(role, content) {
 
     const messageContent = document.createElement('div');
     messageContent.className = 'message-content';
-    messageContent.textContent = content;
+
+    if (isMarkdown) {
+        messageContent.innerHTML = marked(content);
+    } else {
+        messageContent.textContent = content;
+    }
 
     messageDiv.appendChild(avatar);
     messageDiv.appendChild(messageContent);
@@ -79,8 +84,8 @@ function addMessageToChat(role, content) {
 
 function updateChatHistory(role, content) {
     chatHistory.push({ role, content });
-    if (chatHistory.length > 10) {
-        chatHistory = chatHistory.slice(-10);
+    if (chatHistory.length > 5) {
+        chatHistory = chatHistory.slice(-5);
     }
 }
 

@@ -18,6 +18,7 @@ Functionality:
    - Store and use previous conversations as chat_history when asking new questions.
    - Store previous conversations ONLY up-to 5 conversations, and remove older ones.
    - Submit chat messages when the Enter key is pressed or when the send button is clicked.
+   - Render Only the AI responses in markdown format.
    - Implement PDF upload functionality.
    - Add a loader near the upload field to show that uploading is in progress.
    - Indicate the upload status (success/failure) in the UI after completion.

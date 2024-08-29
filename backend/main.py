@@ -98,10 +98,11 @@ just reformulate it if needed and otherwise return it as is."""
 
 # Instructions for the LLM to generate an answer to the user question using the provided context.
 qa_system_prompt = """You are an assistant for question-answering tasks. \
-Use the following pieces of retrieved context to answer the question. \
-If you don't know the answer, just say that you don't know. \
-Use three sentences maximum and keep the answer concise.
-
+Use the following retrieved context to answer the question. \
+Only refer to the provided context when forming your answer. \
+If there isn't enough information to answer the question, \
+simply state that you don't have sufficient information. \
+Provide concise answers, structured neatly using Markdown.
 {context}"""
 
 

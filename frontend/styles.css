@@ -176,3 +176,53 @@ body, html {
     margin-top: 10px;
     font-style: italic;
 }
+
+/* Markdown styles */
+.message-content h1, .message-content h2, .message-content h3,
+.message-content h4, .message-content h5, .message-content h6 {
+    margin-top: 10px;
+    margin-bottom: 5px;
+}
+
+.message-content p {
+    margin-bottom: 10px;
+}
+
+.message-content ul, .message-content ol {
+    margin-left: 20px;
+    margin-bottom: 10px;
+}
+
+.message-content code {
+    background-color: #f0f0f0;
+    padding: 2px 4px;
+    border-radius: 4px;
+}
+
+.message-content pre {
+    background-color: #f0f0f0;
+    padding: 10px;
+    border-radius: 4px;
+    overflow-x: auto;
+}
+
+.message-content blockquote {
+    border-left: 4px solid #ccc;
+    margin-left: 0;
+    padding-left: 10px;
+    color: #666;
+}
+
+.message-content a {
+    color: #2980b9;
+    text-decoration: none;
+}
+
+.message-content a:hover {
+    text-decoration: underline;
+}
+
+.message-content img {
+    max-width: 100%;
+    height: auto;
+}
