@@ -16,6 +16,7 @@ Functionality:
    - Implement OAuth2 protocol to access the service using the provided configurations.
    - Generate a UUID automatically for each chat session and store it in the browser session. Use this as the UserId.
    - Store and use previous conversations as chat_history when asking new questions.
+   - Store previous conversations ONLY up-to 5 conversations, and remove older ones.
    - Submit chat messages when the Enter key is pressed or when the send button is clicked.
    - Implement PDF upload functionality.
    - Add a loader near the upload field to show that uploading is in progress.

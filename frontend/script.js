@@ -9,7 +9,8 @@ const typingIndicator = document.querySelector('.typing-indicator');
 
 let accessToken = null;
 let chatHistory = [];
-const userId = uuid.v4();
+const userId = sessionStorage.getItem('userId') || uuid.v4();
+sessionStorage.setItem('userId', userId);
 
 async function getAccessToken() {
     const response = await fetch(window.configs.tokenUrl, {
@@ -46,8 +47,8 @@ async function sendMessage() {
             });
             const data = await response.json();
             addMessageToChat('ai', data.response);
-            chatHistory.push({ role: 'human', content: message });
-            chatHistory.push({ role: 'ai', content: data.response });
+            updateChatHistory('human', message);
+            updateChatHistory('ai', data.response);
         } catch (error) {
             console.error('Error:', error);
             addMessageToChat('ai', 'Sorry, there was an error processing your request.');
@@ -74,6 +75,13 @@ function addMessageToChat(role, content) {
     messageDiv.appendChild(messageContent);
     chatMessages.appendChild(messageDiv);
     chatMessages.scrollTop = chatMessages.scrollHeight;
+}
+
+function updateChatHistory(role, content) {
+    chatHistory.push({ role, content });
+    if (chatHistory.length > 10) {
+        chatHistory = chatHistory.slice(-10);
+    }
 }
 
 function disableInput(disabled) {
