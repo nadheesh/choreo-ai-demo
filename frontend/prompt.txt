@@ -20,6 +20,8 @@ Functionality:
    - Submit chat messages when the Enter key is pressed or when the send button is clicked.
    - Render Only the AI responses in markdown format.
    - Implement PDF upload functionality.
+   - When a file is uploaded, display a system message in the chat view with the uploaded file name.
+   - Style the system message to be centered, in a smaller font, and in a muted color.
    - Add a loader near the upload field to show that uploading is in progress.
    - Indicate the upload status (success/failure) in the UI after completion.
 

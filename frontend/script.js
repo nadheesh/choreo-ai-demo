@@ -82,6 +82,14 @@ function addMessageToChat(role, content, isMarkdown = false) {
     chatMessages.scrollTop = chatMessages.scrollHeight;
 }
 
+function addSystemMessage(message) {
+    const systemMessageDiv = document.createElement('div');
+    systemMessageDiv.className = 'system-message';
+    systemMessageDiv.textContent = message;
+    chatMessages.appendChild(systemMessageDiv);
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+}
+
 function updateChatHistory(role, content) {
     chatHistory.push({ role, content });
     if (chatHistory.length > 5) {
@@ -119,6 +127,7 @@ async function uploadPDF() {
             });
             const data = await response.json();
             uploadStatus.textContent = 'Upload successful!';
+            addSystemMessage(`Uploaded ${file.name}`);
         } catch (error) {
             console.error('Error:', error);
             uploadStatus.textContent = 'Upload failed. Please try again.';

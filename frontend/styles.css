@@ -226,3 +226,12 @@ body, html {
     max-width: 100%;
     height: auto;
 }
+
+/* System message styles */
+.system-message {
+    text-align: center;
+    font-size: 0.9em;
+    color: #7f8c8d;
+    margin: 10px 0;
+    font-style: italic;
+}
