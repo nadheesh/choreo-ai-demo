@@ -47,8 +47,8 @@ class ConversationRequest(BaseModel):
     chat_history: List[Message]
 
 
-@app.post("/add_data")
-async def add_data(file: UploadFile = File(...), user_id: str = Form(...)):
+@app.post("/upload_pdf")
+async def upload_pdf(file: UploadFile = File(...), user_id: str = Form(...)):
     """
     Add data from a PDF file to the vector store.
 
