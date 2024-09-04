@@ -1,22 +1,23 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import { marked } from 'marked';
+import Cookies from 'js-cookie';
 import './App.css';
 
 function App() {
   const [messages, setMessages] = useState([]);
   const [inputMessage, setInputMessage] = useState('');
   const [isTyping, setIsTyping] = useState(false);
-  const [accessToken, setAccessToken] = useState(null);
   const [chatHistory, setChatHistory] = useState([]);
   const [userId] = useState(() => sessionStorage.getItem('userId') || uuidv4());
   const [uploadStatus, setUploadStatus] = useState('');
   const [isUploading, setIsUploading] = useState(false);
+  const [userInfo, setUserInfo] = useState(null);
   const chatMessagesRef = useRef(null);
 
   useEffect(() => {
     sessionStorage.setItem('userId', userId);
-    getAccessToken();
+    getUserInfo();
   }, [userId]);
 
   useEffect(() => {
@@ -25,19 +26,17 @@ function App() {
     }
   }, [messages]);
 
-  const getAccessToken = async () => {
+  const getUserInfo = async () => {
     try {
-      const response = await fetch(window.configs.tokenUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded'
-        },
-        body: `grant_type=client_credentials&client_id=${window.configs.clientId}&client_secret=${window.configs.clientSecret}`
-      });
-      const data = await response.json();
-      setAccessToken(data.access_token);
+      const response = await fetch('/auth/userinfo');
+      if (response.ok) {
+        const data = await response.json();
+        setUserInfo(data);
+      } else {
+        console.error('Failed to fetch user info');
+      }
     } catch (error) {
-      console.error('Error getting access token:', error);
+      console.error('Error fetching user info:', error);
     }
   };
 
@@ -48,11 +47,10 @@ function App() {
       setIsTyping(true);
 
       try {
-        const response = await fetch(`${window.configs.serviceUrl}/ask_question`, {
+        const response = await fetch('/choreo-apis/ask_question', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${accessToken}`
           },
           body: JSON.stringify({
             user_id: userId,
@@ -118,11 +116,8 @@ function App() {
       formData.append('user_id', userId);
 
       try {
-        const response = await fetch(`${window.configs.serviceUrl}/add_data`, {
+        const response = await fetch('/choreo-apis/upload_pdf', {
           method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${accessToken}`
-          },
           body: formData
         });
         await response.json();
@@ -137,6 +132,14 @@ function App() {
     }
   };
 
+  const handleLogin = () => {
+    window.location.href = "/auth/login";
+  };
+
+  const handleLogout = () => {
+    window.location.href = `/auth/logout?session_hint=${Cookies.get('session_hint')}`;
+  };
+
   return (
     <div className="container">
       <div className="left-panel">
@@ -149,6 +152,14 @@ function App() {
           {isUploading && <div className="loader" id="upload-loader"></div>}
           <p id="upload-status">{uploadStatus}</p>
         </div>
+        {userInfo ? (
+          <div>
+            <p>Welcome, {userInfo.name}</p>
+            <button onClick={handleLogout}>Logout</button>
+          </div>
+        ) : (
+          <button onClick={handleLogin}>Login</button>
+        )}
       </div>
       <div className="chat-area">
         <div className="chat-header">
@@ -184,9 +195,9 @@ function App() {
             onChange={(e) => setInputMessage(e.target.value)}
             onKeyPress={(e) => e.key === 'Enter' && sendMessage()}
             placeholder="Type your message..."
-            disabled={isTyping || isUploading}
+            disabled={isTyping || isUploading || !userInfo}
           />
-          <button id="send-button" onClick={sendMessage} disabled={isTyping || isUploading}>
+          <button id="send-button" onClick={sendMessage} disabled={isTyping || isUploading || !userInfo}>
             <i className="fas fa-paper-plane"></i>
           </button>
         </div>
