@@ -1,3 +1,5 @@
+import logging
+import os
 import tempfile
 from typing import List, Optional
 
@@ -8,10 +10,12 @@ from langchain_community.document_loaders import PyPDFLoader
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 from langchain_openai import ChatOpenAI
 from langchain_openai.embeddings import OpenAIEmbeddings
-from langchain_pinecone import PineconeVectorStore
+from langchain_postgres import PGVector
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from pydantic import BaseModel
 from starlette.middleware.cors import CORSMiddleware
+
+logging.basicConfig(level=logging.DEBUG)
 
 # FastAPI app initialization
 app = FastAPI()
@@ -28,8 +32,23 @@ app.add_middleware(
 # Initialize OpenAI embeddings
 embeddings = OpenAIEmbeddings(model="text-embedding-3-small")
 
-# Initialize Pinecone vector store
-vector_store = PineconeVectorStore(embedding=embeddings)
+# Load values from environment variables
+host = os.getenv("DB_HOST")
+username = os.getenv("DB_USERNAME")
+password = os.getenv("DB_PASSWORD")
+port = os.getenv("DB_PORT", "11867")
+dbname = os.getenv("DB_NAME")
+collection_name = os.getenv("DB_COLLECTION_NAME", "my_docs")
+
+connection = f"postgresql+psycopg://{username}:{password}@{host}:{port}/{dbname}"
+
+vector_store = PGVector(
+    embeddings=embeddings,
+    collection_name=collection_name,
+    connection=connection,
+    use_jsonb=True,
+    async_mode=True
+)
 
 # Initialize OpenAI language model
 llm = ChatOpenAI(model_name="gpt-4o-mini")
@@ -87,6 +106,7 @@ async def upload_pdf(file: UploadFile = File(...), user_id: str = Form(...)):
         await vector_store.aadd_documents(chunks)
         return {"message": "PDF data added successfully"}
     except Exception as e:
+        logging.error(f"Error processing request: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -164,6 +184,7 @@ async def ask_question(request: ConversationRequest):
         response = await rag_chain.ainvoke({"input": message, "chat_history": chat_history})
         return {"response": response['answer']}
     except Exception as e:
+        logging.error(f"Error processing request: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
 
 
