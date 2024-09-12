@@ -10,7 +10,7 @@ info:
     name: Apache 2.0
     url: http://www.apache.org/licenses/LICENSE-2.0.html
 paths:
-  /add_data:
+  /upload_pdf:
     post:
       summary: Upload a PDF and add its data to the vector store
       description: Adds data from a PDF file to the vector store, associating the data with a specific user.
