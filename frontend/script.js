@@ -118,7 +118,7 @@ async function uploadPDF() {
         formData.append('user_id', userId);
 
         try {
-            const response = await fetch(`${window.configs.serviceUrl}/add_data`, {
+            const response = await fetch(`${window.configs.serviceUrl}/upload_pdf`, {
                 method: 'POST',
                 headers: {
                     'Authorization': `Bearer ${accessToken}`
