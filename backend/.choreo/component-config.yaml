@@ -8,3 +8,10 @@ spec:
       networkVisibility: Public
       context: /
       schemaFilePath: openapi.yaml
+  outbound:
+    serviceReferences:
+      - name: thirdparty:OpenAI
+        connectionConfig: 01ef76ed-e39f-1c48-b781-0054f4b4d58f
+        env:
+          - from: OPENAI_API_KEY
+            to: OPENAI_API_KEY
