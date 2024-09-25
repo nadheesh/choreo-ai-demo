@@ -51,25 +51,34 @@ To set up and run the project locally:
 3. Set up environment variables:
 
    - **OPENAI_API_KEY**: Your OpenAI API key.
-   - **PINECONE_API_KEY**: Your Pinecone API key.
-   - **PINECONE_INDEX_NAME**: The name of the Pinecone index that holds the data.
+   - **DB_HOST**: Your PostgreSQL database host URL.
+   - **DB_USERNAME**: Username to access your PostgreSQL database.
+   - **DB_PASSWORD**: Password for the specified user.
+   - **DB_PORT**: Port number your PostgreSQL instance is using (default: 5432).
+   - **DB_NAME**: Name of your PostgreSQL database.
 
    You can set these environment variables in your terminal session with:
 
    ```bash
    export OPENAI_API_KEY='your-openai-api-key'
-   export PINECONE_API_KEY='your-pinecone-api-key'
-   export PINECONE_INDEX_NAME='your-pinecone-index-name'
+   export DB_HOST='your-postgresql-db-host'
+   export DB_USERNAME='your-db-username'
+   export DB_PASSWORD='your-db-password'
+   export DB_PORT='your-db-port'
+   export DB_NAME='your-db-name'
    ```
 
    Alternatively, you can create a `.env` file in the root of your project and add the following lines:
 
    ```env
    OPENAI_API_KEY=your-openai-api-key
-   PINECONE_API_KEY=your-pinecone-api-key
-   PINECONE_INDEX_NAME=your-pinecone-index-name
+   DB_HOST=your-postgresql-db-host
+   DB_USERNAME=your-db-username
+   DB_PASSWORD=your-db-password
+   DB_PORT=your-db-port
+   DB_NAME=your-db-name
    ```
-
+   
 4. Run the FastAPI server:
    ```bash
    uvicorn main:app --reload 
